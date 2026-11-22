@@ -23,8 +23,7 @@ SOFTWARE.
 ---
 
 This license applies only to the patch tooling and documentation in this
-repository (the scripts under patches/, README.md, PATCH_NOTES.md, and
-ANALYSIS.md).
+repository (the scripts under patches/ and README.md).
 
 The repackaged APK ("IR Remote Universal.apk") is a derivative of Transsion's
 proprietary "IR Remote" application (com.transsion.irremote). Transsion and

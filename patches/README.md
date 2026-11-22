@@ -30,6 +30,3 @@ apksigner sign --ks your.keystore --out "IR Remote Universal.apk" aligned.apk
 - **`patch_smali.py`** — spoofs the Java signature getter, forces offline mode,
   forces init success, adds a launcher entry + auto-shortcut receiver, and
   configures the manifest.
-
-See [../PATCH_NOTES.md](../PATCH_NOTES.md) for the full change summary and
-[../ANALYSIS.md](../ANALYSIS.md) for the reverse-engineering report.
