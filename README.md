@@ -20,14 +20,6 @@ The launcher icon appears immediately; a home-screen shortcut is broadcast on in
 
 **Requirements:** a device with a real IR emitter (`ConsumerIrManager.hasIrEmitter()`), Android 7.0+ (API 24), arm64-v8a.
 
-## Verified
-
-Tested on-device (RedMagic NX769J, Android 16, PH SIM) over wireless adb:
-
-- ✅ No crash selecting a device type (native gate crash fixed)
-- ✅ Brand list loads: TV + PH = **1,983 brands** (adapter shows 2,010 items)
-- ✅ First-launch 53.8 MB offline DB copy completes within the coroutine timeout
-- ✅ Offline decryption key `0x133a133` confirmed against the bundled DB
 
 ```
 # 1. decode
