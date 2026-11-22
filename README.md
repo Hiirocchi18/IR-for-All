@@ -19,18 +19,6 @@ adb install -r "IR Remote Universal.apk"
 The launcher icon appears immediately; a home-screen shortcut is broadcast on install and on every reboot.
 
 **Requirements:** a device with a real IR emitter (`ConsumerIrManager.hasIrEmitter()`), Android 7.0+ (API 24), arm64-v8a.
-
-## Verified
-
-Tested on a RedMagic NX769J (Android 16) over wireless adb:
-
-- ✅ No crash selecting a device type
-- ✅ Brand list loads (TV + PH = 1,983 brands)
-- ✅ First-launch 53.8 MB offline DB copy completes within the timeout
-- ✅ **Physical IR transmission confirmed** — works on a TV and a TV box
-
-
-
 ```
 # 1. decode
 java -jar apktool.jar d IR-Remote.apk -o decoded
