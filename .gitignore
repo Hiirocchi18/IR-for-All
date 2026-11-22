@@ -1,0 +1,22 @@
+# build artifacts
+*.apk
+*.idsig
+*.keystore
+*.jks
+build/
+tools/
+out/
+
+# apktool decode tree (huge)
+decoded/
+decoded_orig/
+patch/decoded/
+
+# analysis scratch
+analysis/
+jadx/
+*.class
+
+# OS
+Thumbs.db
+.DS_Store

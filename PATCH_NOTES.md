@@ -1,22 +1,54 @@
-# IR Remote – universal build
+# IR Remote — universal build (patch notes)
 
 Patched from `com.transsion.irremote` v14.02.02.065 (Infinix GT 20 system app).
 
-## Why it was GT 20-only
-- No `MAIN/LAUNCHER` activity (`meta-data icon=invisible`): only Transsion system UI could start it.
-- Direct hidden-API call (`android.os.SystemProperties`, `vz1.<clinit>`) – fine for a system app, crashes-prone for a user-installed one.
-- Vendor-only permissions/services; Transsion `hubsdk` classes (already has AOSP fallbacks via `vi3`/THubCore).
-- The IR check itself (`consumer_ir` + `hasIrEmitter()`) was already generic.
+## Root cause of the Infinix GT 20 lock
+
+1. **Native signature gate** — `libkksdk.so` verifies the APK is signed with
+   Transsion's `welife` certificate (MD5 `E83DAE982C78FBDA17F5270720E101AC`).
+   All four native init functions call one shared gate routine.
+2. **Online-first brand list** — `SDKSwitcher` defaults to `OnlineFirst`, which
+   hits Kookong's API with Transsion key `2B84D47E27B15A68CDB79FC13CDBB842`; a
+   re-signed build gets rejected ("Brand list request failed").
+3. **No launcher entry** — no `MAIN`/`LAUNCHER` activity.
 
 ## Changes
-- Manifest: `SplashActivity` is now the launcher entry (icon appears right after install) + static long-press shortcut (`res/xml/shortcuts.xml`).
-- Manifest: `uses-feature android.hardware.consumerir` (required), `INSTALL_SHORTCUT` permission; removed Transsion-only permissions (`MULCOOPERATE_PROXIMITY`, `dataservice.READ/WRITE`) and GSF `READ_GSERVICES`.
-- `SplashActivity.F()`: on first launch asks the launcher to pin a home-screen shortcut using the app's own `kh3.b()` (API 26+); legacy `INSTALL_SHORTCUT` broadcast on API 24-25. Runs once.
-- `vz1.<clinit>`: hidden-API call wrapped in try/catch (default `true`).
-- Resources: restored enum symbols in `attrs.xml` so aapt2 could relink (values unchanged).
-- Re-signed with a new key (v2/v3), zipalign 16 KB, libs uncompressed.
+
+### Native (`libkksdk.so`, arm64-v8a)
+
+| Address | Patch | Effect |
+|---|---|---|
+| `0x57ec4` | write Transsion MD5 to the out-param, return 1 | gate passes AND downstream `strcmp` sees a match |
+| `0x57ad8` | force the "matched" branch | sets offline decrypt-key flag `[de000+0xfc]=1` |
+| `0x57af4`/`0x57af8` | NOP the `free(*out)` | the out-param is now a static string |
+
+With `[de000+0xfc]=1`, `StreamHelper2_dec` uses fixed key `0x133a133`, which
+correctly decrypts the bundled `kkoffline.db`.
+
+### Java (smali)
+
+- `utils.d.b()` → hardcoded Transsion cert MD5.
+- `offline.SDKSwitcher.isOnlineMode()` → `false` (offline DB).
+- `KookongSDK.init()` → returns `true`.
+
+### Manifest
+
+- `uses-feature android.hardware.consumerir` (required).
+- Permissions: `TRANSMIT_IR`, `RECEIVE_BOOT_COMPLETED`, `INSTALL_SHORTCUT`.
+- `SplashActivity` gets `MAIN`/`LAUNCHER`.
+- New `ShortcutReceiver` (auto home-screen shortcut on install + boot).
+
+### ABI
+
+- `armeabi-v7a` dropped (OLLVM control-flow-flattened gate). arm64 only.
 
 ## Install notes
-- Signature differs from the original: uninstall/disable the stock copy first (on the GT 20 it is a system app).
-- Android cannot add a home shortcut silently; the launcher shows a one-time confirmation.
-- Not tested on hardware.
+
+- Signature differs from stock: uninstall/disable the original first (on the GT 20 it
+  is a system app).
+- Re-signed with a new key (v2/v3), zipaligned, libs uncompressed.
+
+## Verification
+
+On-device (RedMagic NX769J, Android 16, PH): brand list loads (TV = 1,983 brands),
+first-launch DB copy completes, no crash. IR transmission not yet hardware-tested.
