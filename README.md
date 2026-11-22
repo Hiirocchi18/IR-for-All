@@ -8,26 +8,6 @@ A repackaged, unlocked build of Transsion's *IR Remote* (`com.transsion.irremote
 
 ---
 
-## Why the stock app only worked on the Infinix GT 20
-
-1. **Native signature gate** — `libkksdk.so` (the Kookong IR engine) computes the MD5 of the APK's signing certificate and refuses to initialize unless it matches Transsion's `welife` certificate (`E83DAE982C78FBDA17F5270720E101AC`). Any re-signed build fails.
-2. **Online-first brand list** — the app defaults to fetching the brand database from Kookong's servers with a Transsion-issued license key (`2B84D47E27B15A68CDB79FC13CDBB842`). On non-Transsion builds the request is rejected, producing **"Brand list request failed"**.
-3. **No launcher entry** — the app has no `MAIN`/`LAUNCHER` activity, so only Transsion's system UI could start it; no icon appeared on other devices.
-
-## What this build changes
-
-| Patch | Layer | Effect |
-|---|---|---|
-| Signature spoof | native (`libkksdk.so`) | gate returns "Transsion-signed" and sets the offline decrypt-key flag |
-| Signature spoof | Java (`utils.d`) | `b()` returns the Transsion cert MD5 |
-| Force offline | Java (`SDKSwitcher`) | `isOnlineMode()` → `false`, uses the bundled 53.8 MB `kkoffline.db` (7,416 brands / 295,480 IR keys) |
-| Force init success | Java (`KookongSDK`) | `init()` → `true` |
-| Universal IR | *(already generic)* | stock `ConsumerIrManager.transmit()`, gated only by `hasIrEmitter()` |
-| Permissions | manifest | `TRANSMIT_IR`, `RECEIVE_BOOT_COMPLETED`, `INSTALL_SHORTCUT`, `consumerir` feature |
-| Launcher entry | manifest | `SplashActivity` gets `MAIN`/`LAUNCHER` |
-| Auto shortcut | new `ShortcutReceiver` | home-screen shortcut on install + boot |
-| arm64 only | build | dropped `armeabi-v7a` (OLLVM-obfuscated gate) |
-
 ## Install
 
 Download `IR Remote Universal.apk` from the latest [release](../../releases) and install:
@@ -48,18 +28,6 @@ Tested on-device (RedMagic NX769J, Android 16, PH SIM) over wireless adb:
 - ✅ Brand list loads: TV + PH = **1,983 brands** (adapter shows 2,010 items)
 - ✅ First-launch 53.8 MB offline DB copy completes within the coroutine timeout
 - ✅ Offline decryption key `0x133a133` confirmed against the bundled DB
-
-Not yet tested: physical IR transmission (no IR receiver attached). The path is stock `ConsumerIrManager.transmit()` and should work on any IR phone.
-
-## How the lock works (technical)
-
-All four native init functions (`StreamHelper.init`, `CodeHelper.init`, `StreamHelper2.init`, `IrDevice.init`) call one shared gate routine at arm64 `0x57ec4`. It calls back into Java to compute the signing cert's MD5 and string-compares it against Transsion's value. On mismatch it fails; the offline decrypt path then selects key `0` instead of `0x133a133`, so even the bundled DB can't be read.
-
-The patch makes the gate **write the Transsion MD5 to its out-param** (so downstream `strcmp` sees a match), forces the "matched" branch (which sets the decrypt-key flag `[de000+0xfc]=1`), and NOPs the `free()` of that now-static string. Full details in [ANALYSIS.md](ANALYSIS.md).
-
-## Reproducing the build
-
-Requirements: apktool 3.x, a JDK, Android SDK build-tools (zipalign + apksigner), Python 3.
 
 ```
 # 1. decode
