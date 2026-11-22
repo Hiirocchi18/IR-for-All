@@ -23,7 +23,7 @@ zipalign -f -p 4 patched-unsigned.apk aligned.apk
 apksigner sign --ks your.keystore --out "IR Remote Universal.apk" aligned.apk
 ```
 
-## What each patch does
+## What each patch does to the app
 
 - **`patch_libkksdk.py`** — bypasses the native signature gate in
   `libkksdk.so`. See the script header for the exact addresses and rationale.
